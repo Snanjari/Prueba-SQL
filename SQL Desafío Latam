@@ -1,0 +1,134 @@
+--Simón Nanjarí
+--Desafío Latam
+
+--1 Revisa el tipo de relación y crea el modelo correspondiente. Respeta las claves primarias, foráneas y tipos de datos.
+
+CREATE TABLE peliculas (
+    id INTEGER PRIMARY KEY,
+    nombre VARCHAR(255),
+    año INTEGER
+);
+
+CREATE TABLE tags (
+    id INTEGER PRIMARY KEY,
+    tag VARCHAR(32)
+);
+
+CREATE TABLE peliculas_tags (
+    pelicula_id INTEGER,
+    tag_id INTEGER,
+    FOREIGN KEY (pelicula_id) REFERENCES peliculas(id),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
+);
+
+--2 insertar 5 películas y 5 tags en las tablas peliculas y tags, respectivamente:
+
+INSERT INTO peliculas (id, nombre, año) VALUES
+(1, 'Episodio IV: Una nueva esperanza', 1997),
+(2, 'Episodio V: El imperio contraataca',  1980),
+(3, 'Episodio VI: El retorno del Jedi',  1983),
+(4, 'Episodio I: La amenaza fantasma',  1999),
+(5, 'Episodio II: El ataque de los clones',  2002);
+
+INSERT INTO tags (id, tag) VALUES
+(1, 'Acción'),
+(2, 'Comedia'),
+(3, 'Drama'),
+(4, 'Romance'),
+(5, 'Thriller');
+
+-- Para cumplir con los requisitos especificos para las asociaciones entre películas y tags
+
+INSERT INTO peliculas_tags (pelicula_id, tag_id) VALUES
+(1, 1),
+(1, 2),
+(1, 3),
+(2, 4),
+(2, 5);
+
+--3 contar el número de tags para cada película
+
+SELECT p.nombre, COUNT(pt.tag_id) AS tag_count
+FROM peliculas p
+LEFT JOIN peliculas_tags pt ON p.id = pt.pelicula_id
+GROUP BY p.nombre;
+
+-- 4) Crear tablas
+
+CREATE TABLE preguntas (
+    id INTEGER PRIMARY KEY,
+    pregunta VARCHAR(255),
+    respuesta_correcta VARCHAR(255)
+);
+
+CREATE TABLE usuarios (
+    id INTEGER PRIMARY KEY,
+    nombre VARCHAR(255),
+    edad INTEGER CHECK (edad >= 18)
+);
+
+CREATE TABLE respuestas (
+    id INTEGER PRIMARY KEY,
+    respuesta VARCHAR(255),
+    usuario_id INTEGER,
+    pregunta_id INTEGER,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (pregunta_id) REFERENCES preguntas(id)
+);
+
+-- 5) Agregar datos
+
+INSERT INTO usuarios (nombre, edad) VALUES ('Simón', 25);
+INSERT INTO usuarios (nombre, edad) VALUES ('Bárbara', 30);
+INSERT INTO usuarios (nombre, edad) VALUES ('Benito', 35);
+INSERT INTO usuarios (nombre, edad) VALUES ('Ann', 40);
+INSERT INTO usuarios (nombre, edad) VALUES ('Odín', 45);
+
+INSERT INTO preguntas (pregunta, respuesta_correcta) VALUES ('¿Cuál es la capital de Francia?', 'Paris');
+INSERT INTO preguntas (pregunta, respuesta_correcta) VALUES ('¿Quién escribió la saga de Harry Potter?', 'J.K. Rowling');
+INSERT INTO preguntas (pregunta, respuesta_correcta) VALUES ('¿Cuál es el planeta más grande del sistema solar?', 'Jupiter');
+INSERT INTO preguntas (pregunta, respuesta_correcta) VALUES ('¿Quién pintó la Mona Lissa?', 'Leonaro Da Vinci');
+INSERT INTO preguntas (pregunta, respuesta_correcta) VALUES ('¿Cuál es el continente más pequeño?', 'Australia');
+
+-- a. La primera pregunta debe estar respondida correctamente dos veces, por dos usuarios diferentes.
+
+INSERT INTO respuestas (respuesta, usuario_id, pregunta_id) VALUES ('Paris', 1, 1);
+INSERT INTO respuestas (respuesta, usuario_id, pregunta_id) VALUES ('Paris', 2, 1);
+
+-- b. La segunda pregunta debe estar contestada correctamente solo por un usuario.
+
+INSERT INTO respuestas (respuesta, usuario_id, pregunta_id) VALUES ('J.K. Rowling', 3, 2);
+
+-- c. Las otras dos preguntas deben tener respuestas incorrectas
+
+INSERT INTO respuestas (respuesta, usuario_id, pregunta_id) VALUES ('Respuesta incorrecta', 4, 3);
+INSERT INTO respuestas (respuesta, usuario_id, pregunta_id) VALUES ('Respuesta incorrecta', 5, 4);
+
+--6) Cuenta la cantidad de respuestas correctas totales por usuario
+
+SELECT usuarios.nombre, COUNT(*) as respuestas_correctas
+FROM respuestas
+JOIN preguntas ON respuestas.pregunta_id = preguntas.id
+JOIN usuarios ON respuestas.usuario_id = usuarios.id
+WHERE respuestas.respuesta = preguntas.respuesta_correcta
+GROUP BY usuarios.nombre;
+
+--7) Por cada pregunta cuenta cuántos usuarios respondieron correctamente.
+
+SELECT preguntas.pregunta, COUNT(*) as respuestas_correctas
+FROM respuestas
+JOIN preguntas ON respuestas.pregunta_id = preguntas.id
+WHERE respuestas.respuesta = preguntas.respuesta_correcta
+GROUP BY preguntas.pregunta;
+
+--8) Borrado en cascada de las respuestas al borrar un usuario.
+
+DELETE FROM usuarios WHERE id = 1;
+
+--9) Restricción que impida insertar usuarios menores de 18 años en la base de datos.
+-- Ya se implementó en el paso 4 al crear la tabla con CHECK(edad >=18)
+
+--10) Alterar la tabla existente de usuarios agregando el campo email.
+
+ALTER TABLE usuarios ADD COLUMN email VARCHAR(255);
+CREATE UNIQUE INDEX idx_email ON usuarios(email);
